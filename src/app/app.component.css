@@ -1,0 +1,66 @@
+.annotation-container {
+  display: flex;
+  gap: 2rem;
+  padding: 1rem;
+  flex-direction: column;
+  min-height: 100vh;
+  align-items: center; /* Align container to center */
+}
+
+.canvas-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative; /* Ensure proper positioning */
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+}
+
+canvas {
+  border: 1px solid black;
+  margin: auto; /* Center canvas within container */
+}
+
+.legend-container{
+  display: flex;
+  gap: 2rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem; /* equivalent to text-sm */
+  font-weight: 500; /* equivalent to font-medium */
+  color: #1F2937; /* equivalent to text-gray-900 */
+  margin-right: 0.75rem; /* equivalent to me-3 */
+  gap: 0.25rem;
+}
+
+.legend-dot {
+  display: flex;
+  width: 0.625rem; /* equivalent to w-2.5 */
+  height: 0.625rem; /* equivalent to h-2.5 */
+  border-radius: 9999px; /* equivalent to rounded-full */
+  margin-right: 0.375rem; /* equivalent to me-1.5 */
+  flex-shrink: 0; /* equivalent to flex-shrink-0 */
+}
+
+.text-muted {
+  color: #6B7280; /* Equivalent to text-gray-500 */
+}
+
+.key {
+  padding: 4px 8px; /* Equivalent to px-2 py-1.5 */
+  font-size: 0.75rem; /* Equivalent to text-xs */
+  font-weight: 600; /* Equivalent to font-semibold */
+  color: #1F2937; /* Equivalent to text-gray-800 */
+  background-color: #F3F4F6; /* Equivalent to bg-gray-100 */
+  border: 1px solid #E5E7EB; /* Equivalent to border-gray-200 */
+  border-radius: 0.375rem; /* Equivalent to rounded-lg */
+  display: inline-block;
+}
