@@ -5,7 +5,7 @@ import {IconService, PlacedIcon} from "../services/icon.service";
   selector: 'app-root',
   standalone: true,
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+  styleUrls: ['./app.component.css'],
 })
 export class AppComponent implements AfterViewInit {
   @ViewChild('imageCanvas') canvasElement!: ElementRef<HTMLCanvasElement>;
