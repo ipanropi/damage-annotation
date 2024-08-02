@@ -1,4 +1,5 @@
 import { Component, AfterViewInit, ViewChild, ElementRef, HostListener } from '@angular/core';
+import {IconService, PlacedIcon} from "../services/icon.service";
 
 @Component({
   selector: 'app-root',
@@ -26,6 +27,7 @@ export class AppComponent implements AfterViewInit {
   private hoverIcon: HTMLImageElement | null = null;
   private mouseX = 0;
   private mouseY = 0;
+  constructor(private iconService: IconService) {}
 
   ngAfterViewInit() {
     this.canvasContext = this.canvasElement.nativeElement.getContext('2d')!;
@@ -53,6 +55,49 @@ export class AppComponent implements AfterViewInit {
     canvas.addEventListener('mousemove', this.pan.bind(this));
     canvas.addEventListener('mouseup', this.endPan.bind(this));
     canvas.addEventListener('wheel', this.handleWheel.bind(this));
+  }
+
+  savePlacedIcons() {
+    const dataToSend: PlacedIcon[] = this.placedIcons.map(icon => ({
+      x: icon.x,
+      y: icon.y,
+      size: icon.size,
+      imgSrc: icon.img.src  // Extract img.src from HTMLImageElement
+    }));
+
+    this.iconService.savePlacedIcons(dataToSend).subscribe(
+      (response: any) => {
+        console.log('Icons saved successfully!', response);
+        const sessionId = response.SessionId;
+        console.log('Session ID:', sessionId);
+      },
+      error => {
+        console.error('Error saving icons!', error);
+      }
+    );
+  }
+
+  fetchPlacedIcons(sessionId: string) {
+    this.iconService.fetchPlacedIcons(sessionId).subscribe(
+      (icons: PlacedIcon[]) => {
+        // Reconstruct the placedIcons array with HTMLImageElement, discarding imgSrc
+        this.placedIcons = icons.map(icon => {
+          const imgElement = new Image();
+          imgElement.src = icon.imgSrc;
+          imgElement.onload = () => this.redrawCanvas();
+
+          return {
+            x: icon.x,
+            y: icon.y,
+            size: icon.size,
+            img: imgElement  // Only include properties needed for rendering
+          };
+        });
+      },
+      error => {
+        console.error('Error fetching icons!', error);
+      }
+    );
   }
 
   setCanvasSize() {
