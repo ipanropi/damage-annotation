@@ -15,7 +15,7 @@ export interface PlacedIcon {
   providedIn: 'root'
 })
 export class IconService {
-  private apiUrl = 'https://your-backend-url/api';  // Replace with your backend URL
+  private apiUrl = 'http://localhost:8001/api/icons';  // Replace with your backend URL
 
   constructor(private http: HttpClient) { }
 

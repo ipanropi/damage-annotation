@@ -25,5 +25,8 @@
     <input type="number" [value]="iconSize" (change)="setIconSize($event)" min="10" step="1" style="width: 60px;">
     <span>Current Size: {{ iconSize }}px</span>
     <button (click)="downloadImage()">Download Image</button>
+    <button (click)="savePlacedIcons()">Save Image</button>
+    <input [(ngModel)]="sessionId" placeholder="Enter session ID" type="text" style="margin-right: 10px;">
+    <button (click)="fetchPlacedIcons(sessionId)">Fetch Icons</button>
   </div>
 </div>

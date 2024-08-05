@@ -1,11 +1,15 @@
 import { Component, AfterViewInit, ViewChild, ElementRef, HostListener } from '@angular/core';
-import {IconService, PlacedIcon} from "../services/icon.service";
+import { IconService, PlacedIcon } from "../services/icon.service";
+import { FormsModule } from "@angular/forms";
 
 @Component({
   selector: 'app-root',
   standalone: true,
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
+  imports: [
+    FormsModule
+  ]
 })
 export class AppComponent implements AfterViewInit {
   @ViewChild('imageCanvas') canvasElement!: ElementRef<HTMLCanvasElement>;
@@ -15,8 +19,10 @@ export class AppComponent implements AfterViewInit {
   private placedIcons: Array<{ x: number, y: number, img: HTMLImageElement, size: number }> = [];
   private backgroundImage: HTMLImageElement = new Image();
   private scale: number = 1;  // Default scale (100% zoom)
-  private canvasWidth = 800;
-  private canvasHeight = 600;
+  private originalCanvasWidth = 800;
+  private originalCanvasHeight = 600;
+  private canvasWidth = this.originalCanvasWidth;
+  private canvasHeight = this.originalCanvasHeight;
   private translateX = 0;
   private translateY = 0;
   private isPanning = false;
@@ -27,6 +33,8 @@ export class AppComponent implements AfterViewInit {
   private hoverIcon: HTMLImageElement | null = null;
   private mouseX = 0;
   private mouseY = 0;
+  sessionId: string = '';
+
   constructor(private iconService: IconService) {}
 
   ngAfterViewInit() {
@@ -47,7 +55,7 @@ export class AppComponent implements AfterViewInit {
       } else if (this.isAnnotating && this.hoverIcon) {
         const x = (event.clientX - rect.left - this.translateX) / this.scale;
         const y = (event.clientY - rect.top - this.translateY) / this.scale;
-        this.addIcon(x, y);
+        this.addIcon(x / this.canvasWidth, y / this.canvasHeight);  // Store as percentages
       }
     });
 
@@ -57,55 +65,12 @@ export class AppComponent implements AfterViewInit {
     canvas.addEventListener('wheel', this.handleWheel.bind(this));
   }
 
-  savePlacedIcons() {
-    const dataToSend: PlacedIcon[] = this.placedIcons.map(icon => ({
-      x: icon.x,
-      y: icon.y,
-      size: icon.size,
-      imgSrc: icon.img.src  // Extract img.src from HTMLImageElement
-    }));
-
-    this.iconService.savePlacedIcons(dataToSend).subscribe(
-      (response: any) => {
-        console.log('Icons saved successfully!', response);
-        const sessionId = response.SessionId;
-        console.log('Session ID:', sessionId);
-      },
-      error => {
-        console.error('Error saving icons!', error);
-      }
-    );
-  }
-
-  fetchPlacedIcons(sessionId: string) {
-    this.iconService.fetchPlacedIcons(sessionId).subscribe(
-      (icons: PlacedIcon[]) => {
-        // Reconstruct the placedIcons array with HTMLImageElement, discarding imgSrc
-        this.placedIcons = icons.map(icon => {
-          const imgElement = new Image();
-          imgElement.src = icon.imgSrc;
-          imgElement.onload = () => this.redrawCanvas();
-
-          return {
-            x: icon.x,
-            y: icon.y,
-            size: icon.size,
-            img: imgElement  // Only include properties needed for rendering
-          };
-        });
-      },
-      error => {
-        console.error('Error fetching icons!', error);
-      }
-    );
-  }
-
   setCanvasSize() {
     const containerWidth = window.innerWidth * 0.9;  // 90% of the window width
     const containerHeight = window.innerHeight * 0.7;  // 70% of the window height
 
     // Calculate aspect ratio
-    const aspectRatio = this.canvasWidth / this.canvasHeight;
+    const aspectRatio = this.originalCanvasWidth / this.originalCanvasHeight;
 
     // Adjust canvas size while maintaining aspect ratio
     if (containerWidth / aspectRatio <= containerHeight) {
@@ -215,9 +180,14 @@ export class AppComponent implements AfterViewInit {
     }
   }
 
-  addIcon(x: number, y: number) {
+  addIcon(xPercentage: number, yPercentage: number) {
     if (this.hoverIcon) {
-      this.placedIcons.push({ x, y, img: this.hoverIcon, size: this.iconSize });
+      this.placedIcons.push({
+        x: xPercentage,
+        y: yPercentage,
+        img: this.hoverIcon,
+        size: this.iconSize / Math.max(this.canvasWidth, this.canvasHeight)  // Store size as a percentage
+      });
       this.redrawCanvas();
     }
   }
@@ -225,9 +195,9 @@ export class AppComponent implements AfterViewInit {
   removeIcon(clickX: number, clickY: number) {
     for (let i = this.placedIcons.length - 1; i >= 0; i--) {
       const icon = this.placedIcons[i];
-      const iconX = icon.x * this.scale + this.translateX;
-      const iconY = icon.y * this.scale + this.translateY;
-      const scaledIconSize = icon.size * this.scale;
+      const iconX = icon.x * this.canvasWidth * this.scale + this.translateX;
+      const iconY = icon.y * this.canvasHeight * this.scale + this.translateY;
+      const scaledIconSize = icon.size * Math.max(this.canvasWidth, this.canvasHeight) * this.scale;
       if (
         clickX >= iconX - scaledIconSize / 2 &&
         clickX <= iconX + scaledIconSize / 2 &&
@@ -251,9 +221,9 @@ export class AppComponent implements AfterViewInit {
     this.canvasContext.restore();
 
     this.placedIcons.forEach(icon => {
-      const scaledIconSize = icon.size * this.scale;
-      const x = icon.x * this.scale + this.translateX - scaledIconSize / 2;
-      const y = icon.y * this.scale + this.translateY - scaledIconSize / 2;
+      const scaledIconSize = icon.size * Math.max(this.canvasWidth, this.canvasHeight) * this.scale;
+      const x = icon.x * this.canvasWidth * this.scale + this.translateX - scaledIconSize / 2;
+      const y = icon.y * this.canvasHeight * this.scale + this.translateY - scaledIconSize / 2;
       this.canvasContext.drawImage(icon.img, x, y, scaledIconSize, scaledIconSize);
     });
 
@@ -263,6 +233,50 @@ export class AppComponent implements AfterViewInit {
       const y = this.mouseY - scaledIconSize / 2;
       this.canvasContext.drawImage(this.hoverIcon, x, y, scaledIconSize, scaledIconSize);
     }
+  }
+
+  savePlacedIcons() {
+    const dataToSend: PlacedIcon[] = this.placedIcons.map(icon => ({
+      x: icon.x,
+      y: icon.y,
+      size: icon.size,
+      imgSrc: icon.img.src  // Extract img.src from HTMLImageElement
+    }));
+
+    this.iconService.savePlacedIcons(dataToSend).subscribe(
+      (response: any) => {
+        window.alert('Icons saved successfully!');
+        console.log('Icons saved successfully!', response);
+        this.sessionId = response.SessionId;
+        console.log('Session ID:', this.sessionId);
+      },
+      error => {
+        console.error('Error saving icons!', error);
+      }
+    );
+  }
+
+  fetchPlacedIcons(sessionId: string) {
+    this.iconService.fetchPlacedIcons(sessionId).subscribe(
+      (icons: PlacedIcon[]) => {
+        // Reconstruct the placedIcons array with HTMLImageElement, discarding imgSrc
+        this.placedIcons = icons.map(icon => {
+          const imgElement = new Image();
+          imgElement.src = icon.imgSrc;
+          imgElement.onload = () => this.redrawCanvas();
+
+          return {
+            x: icon.x,
+            y: icon.y,
+            size: icon.size,
+            img: imgElement  // Only include properties needed for rendering
+          };
+        });
+      },
+      error => {
+        console.error('Error fetching icons!', error);
+      }
+    );
   }
 
   downloadImage() {
@@ -277,8 +291,10 @@ export class AppComponent implements AfterViewInit {
     context.drawImage(this.backgroundImage, 0, 0, this.canvasWidth, this.canvasHeight);
 
     this.placedIcons.forEach(icon => {
-      const imgSize = icon.size;
-      context.drawImage(icon.img, icon.x - imgSize / 2, icon.y - imgSize / 2, imgSize, imgSize);
+      const imgSize = icon.size * Math.max(this.canvasWidth, this.canvasHeight);
+      const x = icon.x * this.canvasWidth - imgSize / 2;
+      const y = icon.y * this.canvasHeight - imgSize / 2;
+      context.drawImage(icon.img, x, y, imgSize, imgSize);
     });
 
     const dataURL = canvas.toDataURL('image/png');
